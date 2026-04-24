@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Internal;
 using TaskDb.Data;
 using TaskDb.Models;
 namespace TaskDb.Controllers;
@@ -159,6 +160,14 @@ public class TasksController : ControllerBase {
         return Ok(task);
     }
 
+    [HttpPatch("complete-all")]
+    public async Task<ActionResult<TaskItem>> ToggleCompleteAll() {
+        var count = await _db.Tasks
+            .Where(t => !t.IsCompleted)
+            .ExecuteUpdateAsync(s => s.SetProperty(t => t.IsCompleted, true));
+        return Ok(new { Updated = count });
+    }
+
     [HttpDelete("{id}")]
     public async Task<ActionResult> Delete(int id) {
         var task = await _db.Tasks.FindAsync(id);
@@ -167,5 +176,13 @@ public class TasksController : ControllerBase {
         _db.Tasks.Remove(task);
         await _db.SaveChangesAsync();
         return NoContent();
+    }
+
+    [HttpDelete("completed")]
+    public async Task<ActionResult> DeleteCompleted() {
+        var count = await _db.Tasks
+            .Where(t => t.IsCompleted)
+            .ExecuteDeleteAsync();
+        return Ok(new { Deleted = count });
     }
 }
